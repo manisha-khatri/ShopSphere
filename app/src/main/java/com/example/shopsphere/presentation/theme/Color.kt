@@ -1,4 +1,4 @@
-package com.example.shopsphere.ui.theme
+package com.example.shopsphere.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

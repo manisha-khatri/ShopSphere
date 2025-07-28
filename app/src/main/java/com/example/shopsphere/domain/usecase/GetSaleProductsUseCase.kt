@@ -4,10 +4,10 @@ import com.example.shopsphere.domain.model.Product
 import com.example.shopsphere.domain.repository.ProductRepository
 import javax.inject.Inject
 
-class SearchProductsUseCase @Inject constructor(
+class GetSaleProductsUseCase @Inject constructor(
     private val repository: ProductRepository
 ) {
-    suspend operator fun invoke(query: String): List<Product> {
-        return repository.searchProducts(query)
+    suspend operator fun invoke(): List<Product> {
+        return repository.getSaleProducts()
     }
 }
