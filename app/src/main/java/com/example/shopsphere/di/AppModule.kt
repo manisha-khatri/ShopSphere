@@ -1,18 +1,16 @@
 package com.example.shopsphere.di
 
-import com.example.shopsphere.data.local.LocalProductDataSource
-import com.example.shopsphere.data.remote.RemoteProductDataSource
 import android.app.Application
 import androidx.room.Room
-import com.example.shopsphere.data.local.LocalProductDataSourceImpl
-import com.example.shopsphere.data.local.ProductDao
-import com.example.shopsphere.data.local.ProductDatabase
-import com.example.shopsphere.data.remote.ProductApiService
-import com.example.shopsphere.data.remote.RemoteProductDataSourceImpl
-import com.example.shopsphere.data.repository.ProductRepositoryImpl
-import com.example.shopsphere.domain.repository.ProductRepository
-import com.example.shopsphere.domain.usecase.GetAllProductsUseCase
-import com.example.shopsphere.domain.usecase.GetSaleProductsUseCase
+import com.example.shopsphere.data.local.LocalDataSource
+import com.example.shopsphere.data.local.SearchDao
+import com.example.shopsphere.data.local.SearchDatabase
+import com.example.shopsphere.data.remote.RemoteDataSource
+import com.example.shopsphere.data.remote.SearchApiService
+import com.example.shopsphere.data.repository.SearchRepositoryImpl
+import com.example.shopsphere.domain.repository.SearchRepository
+import com.example.shopsphere.domain.usecase.GetCachedSuggestionsUseCase
+import com.example.shopsphere.domain.usecase.SaveSuggestionsUseCase
 import com.example.shopsphere.domain.usecase.SearchProductsUseCase
 import dagger.Module
 import dagger.Provides
@@ -22,49 +20,73 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
+
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    // === NETWORK ===
     @Provides
     @Singleton
-    fun provideDatabase(app: Application): ProductDatabase =
-        Room.databaseBuilder(app, ProductDatabase::class.java, "product_db").build()
-
-    @Provides
-    fun provideDao(db: ProductDatabase): ProductDao = db.productDao()
-
-    @Provides
-    @Singleton
-    fun provideApi(): ProductApiService = Retrofit.Builder()
-        .baseUrl("https://api.yourstore.com/") // Replace with real API
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(ProductApiService::class.java)
+    fun provideRetrofit(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://mockapi.io/api/") // 🔧 Replace with your real/mock endpoint
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
     @Provides
     @Singleton
-    fun provideRemoteProductDataSource(
-        apiService: ProductApiService
-    ): RemoteProductDataSource = RemoteProductDataSourceImpl(apiService)
+    fun provideSearchApiService(retrofit: Retrofit): SearchApiService {
+        return retrofit.create(SearchApiService::class.java)
+    }
 
-
+    // === DATABASE ===
     @Provides
     @Singleton
-    fun provideProductRepository(
-        remote: RemoteProductDataSource,
-        local: LocalProductDataSource
-    ): ProductRepository = ProductRepositoryImpl(remote, local)
+    fun provideDatabase(app: Application): SearchDatabase {
+        return Room.databaseBuilder(
+            app,
+            SearchDatabase::class.java,
+            "search_db"
+        ).fallbackToDestructiveMigration().build()
+    }
 
     @Provides
+    fun provideSearchDao(db: SearchDatabase) = db.searchDao()
+
+    // === DATA SOURCES ===
+    @Provides
+    fun provideRemoteDataSource(api: SearchApiService) = RemoteDataSource(api)
+
+    @Provides
+    fun provideLocalDataSource(dao: SearchDao): LocalDataSource {
+        return LocalDataSource(dao)
+    }
+
+    // === REPOSITORY ===
+    @Provides
     @Singleton
-    fun provideLocalProductDataSource(
-        dao: ProductDao
-    ): LocalProductDataSource = LocalProductDataSourceImpl(dao)
+    fun provideSearchRepository(
+        remote: RemoteDataSource,
+        local: LocalDataSource
+    ): SearchRepository {
+        return SearchRepositoryImpl(remote, local)
+    }
 
+    // === USE CASES ===
+    @Provides
+    fun provideSearchProductsUseCase(repository: SearchRepository): SearchProductsUseCase {
+        return SearchProductsUseCase(repository)
+    }
 
-    // UseCases
-    @Provides fun provideGetAllProductsUseCase(repo: ProductRepository) = GetAllProductsUseCase(repo)
-    @Provides fun provideSearchProductsUseCase(repo: ProductRepository) = SearchProductsUseCase(repo)
-    @Provides fun provideGetSaleProductsUseCase(repo: ProductRepository) = GetSaleProductsUseCase(repo)
+    @Provides
+    fun provideGetCachedSuggestionsUseCase(repository: SearchRepository): GetCachedSuggestionsUseCase {
+        return GetCachedSuggestionsUseCase(repository)
+    }
+
+    @Provides
+    fun provideSaveSuggestionsUseCase(repository: SearchRepository): SaveSuggestionsUseCase {
+        return SaveSuggestionsUseCase(repository)
+    }
 }

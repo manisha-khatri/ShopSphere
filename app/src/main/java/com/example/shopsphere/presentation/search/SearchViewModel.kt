@@ -3,9 +3,12 @@ package com.example.shopsphere.presentation.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shopsphere.domain.usecase.SearchProductsUseCase
-import com.example.shopsphere.presentation.ui_state.ProductUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -14,30 +17,37 @@ class SearchViewModel @Inject constructor(
     private val searchProductsUseCase: SearchProductsUseCase
 ) : ViewModel() {
 
-    private val _searchQuery = MutableStateFlow("")
-    private val _uiState = MutableStateFlow(ProductUiState())
+    private val _uiState = MutableStateFlow(SearchUiState())
+    val uiState: StateFlow<SearchUiState> = _uiState
 
-    val uiState: StateFlow<ProductUiState> = _uiState
-    val searchQuery: StateFlow<String> = _searchQuery
+    private var searchJob: Job? = null
 
-    fun onQueryChanged(newQuery: String) {
-        _searchQuery.value = newQuery
-        performSearch(newQuery)
-    }
+    fun onEvent(event: SearchEvent) {
+        when (event) {
+            is SearchEvent.QueryChanged -> {
+                _uiState.update { it.copy(query = event.query, isLoading = true) }
 
-    private fun performSearch(query: String) {
-        viewModelScope.launch {
-            if (query.isBlank()) {
-                _uiState.value = ProductUiState()
-                return@launch
+                searchJob?.cancel()
+                searchJob = viewModelScope.launch {
+                    delay(300) // debounce user input
+                    try {
+                        val suggestions = searchProductsUseCase(event.query)
+                        _uiState.update {
+                            it.copy(
+                                suggestions = suggestions,
+                                isLoading = false,
+                                error = null
+                            )
+                        }
+                    } catch (e: Exception) {
+                        _uiState.update { it.copy(isLoading = false, error = e.message) }
+                    }
+                }
             }
 
-            _uiState.value = ProductUiState(isLoading = true)
-            try {
-                val results = searchProductsUseCase(query)
-                _uiState.value = ProductUiState(products = results)
-            } catch (e: Exception) {
-                _uiState.value = ProductUiState(error = e.message ?: "Search failed")
+            is SearchEvent.SuggestionClicked -> {
+                // Handle if needed, e.g., navigate or autofill
+                _uiState.update { it.copy(query = event.suggestion) }
             }
         }
     }

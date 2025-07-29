@@ -3,6 +3,10 @@ package com.example.shopsphere.presentation
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Modifier
 import com.example.shopsphere.presentation.navigation.ShopSphereNavGraph
 import com.example.shopsphere.presentation.theme.ShopSphereTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -13,7 +17,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ShopSphereTheme {
-                ShopSphereNavGraph()
+                Scaffold { innerPadding ->
+                    Box(
+                        modifier = Modifier.padding(innerPadding)
+                    ) {
+                        ShopSphereNavGraph()
+                    }
+                }
             }
         }
     }

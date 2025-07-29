@@ -89,3 +89,74 @@ Hilt
 Clean Architecture
 
 
+
+📁 Project Structure & Packages
+
+- Pure business logic, No Android deps here
+1. domain/ 
+
+model/
+
+Product.kt
+
+SearchSuggestion.kt
+
+repository/
+
+SearchRepository.kt
+
+usecase/
+
+SearchProductsUseCase.kt
+
+GetCachedSuggestionsUseCase.kt
+
+SaveSuggestionsUseCase.kt
+
+2. data/ - Data sources: API, DB, cache
+   remote/
+
+SearchApiService.kt
+
+RemoteDataSource.kt
+
+local/
+
+SearchSuggestionEntity.kt
+
+SearchDao.kt
+
+SearchDatabase.kt
+
+LocalDataSource.kt
+
+repository/
+
+SearchRepositoryImpl.kt (implements domain SearchRepository)
+
+3. presentation/ - Compose UI + ViewModels
+   search/
+
+SearchScreen.kt (UI)
+
+SearchViewModel.kt
+
+SearchUiState.kt
+
+SearchEvent.kt (optional for MVI-style)
+
+4. di/ - Dependency Injection with Hilt
+   NetworkModule.kt
+
+DatabaseModule.kt
+
+RepositoryModule.kt
+
+UseCaseModule.kt
+
+5. navigation/
+   ShopSphereNavGraph.kt (for NavHost)
+
+Routes: "search" and eventually more like "productDetails/{id}"
+
+

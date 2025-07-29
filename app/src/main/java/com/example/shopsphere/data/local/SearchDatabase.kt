@@ -4,10 +4,10 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [ProductEntity::class],
+    entities = [SearchSuggestionEntity::class],
     version = 1,
     exportSchema = false
 )
-abstract class ProductDatabase : RoomDatabase() {
-    abstract fun productDao(): ProductDao
+abstract class SearchDatabase : RoomDatabase() {
+    abstract fun searchDao(): SearchDao
 }
