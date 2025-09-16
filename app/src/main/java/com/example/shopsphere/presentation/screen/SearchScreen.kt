@@ -67,7 +67,7 @@ fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             SearchBar(
-                query = state.query, // ⬅️ Pass TextFieldValue
+                query = state.query,
                 onQueryChange = { newQuery ->
                     viewModel.onEvent(SearchEvent.QueryChanged(newQuery))
                 },
@@ -77,6 +77,13 @@ fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
                 keyboardController = keyboardController,
                 focusManager = focusManager
             )
+            if (state.isLoading) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                )
+            }
 
             if (state.isProductLoading) {
                 Box(
@@ -118,8 +125,8 @@ fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
 
 @Composable
 fun SearchBar(
-    query: TextFieldValue, // ⬅️ Take TextFieldValue
-    onQueryChange: (TextFieldValue) -> Unit, // ⬅️ Callback with TextFieldValue
+    query: TextFieldValue,
+    onQueryChange: (TextFieldValue) -> Unit,
     onSearch: () -> Unit,
     keyboardController: SoftwareKeyboardController?,
     focusManager: FocusManager,
@@ -127,15 +134,9 @@ fun SearchBar(
 ) {
     OutlinedTextField(
         value = query,
-        onValueChange = onQueryChange, // ⬅️ This works now
+        onValueChange = onQueryChange,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search Icon"
-            )
-        },
         trailingIcon = {
             IconButton(
                 onClick = {
@@ -183,14 +184,6 @@ fun SuggestionsList(
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
-        if (isLoading) {
-            LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            )
-        }
-
         if (!isLoading) {
             when {
                 suggestions.isNotEmpty() -> {
