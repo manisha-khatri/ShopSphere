@@ -38,8 +38,10 @@ import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.shopsphere.domain.model.Product
 import com.example.shopsphere.domain.model.SearchSuggestion
@@ -52,56 +54,72 @@ fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
             .pointerInput(Unit) {
-            detectTapGestures(onPress = {
-                keyboardController?.hide()
-                focusManager.clearFocus()
-            })
-        }
-    ) {
-        SearchBar(
-            query = state.query,
-            onQueryChange = { newQuery ->
-                viewModel.onEvent(SearchEvent.QueryChanged(newQuery))
-            },
-            onSearch = {
-                viewModel.onEvent(SearchEvent.RetrySearch)
-            },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        // ... (rest of your SearchScreen composable)
-        if (state.isProductLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+                detectTapGestures(onPress = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                })
             }
-        } else if (state.products.isNotEmpty()) {
-            ProductList(products = state.products)
-        } else {
-            SuggestionsList(
-                suggestions = state.suggestions,
-                isLoading = state.isLoading,
-                query = state.query,
-                onSuggestionClick = { suggestion ->
-                    viewModel.onEvent(SearchEvent.SuggestionClicked(suggestion))
-                }
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            SearchBar(
+                query = state.query, // ⬅️ Pass TextFieldValue
+                onQueryChange = { newQuery ->
+                    viewModel.onEvent(SearchEvent.QueryChanged(newQuery))
+                },
+                onSearch = {
+                    viewModel.onEvent(SearchEvent.RetrySearch)
+                },
+                keyboardController = keyboardController,
+                focusManager = focusManager
             )
+
+            if (state.isProductLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (state.products.isNotEmpty()) {
+                ProductList(products = state.products)
+            }
+        }
+
+        if (state.query.text.isNotBlank() && state.suggestions.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 72.dp) // ⬅️ Increase this value to move the dropdown down
+                    .zIndex(1f)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    SuggestionsList(
+                        suggestions = state.suggestions,
+                        isLoading = state.isLoading,
+                        query = state.query.text,
+                        onSuggestionClick = { suggestion ->
+                            viewModel.onEvent(SearchEvent.SuggestionClicked(suggestion))
+                        }
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
+    query: TextFieldValue, // ⬅️ Take TextFieldValue
+    onQueryChange: (TextFieldValue) -> Unit, // ⬅️ Callback with TextFieldValue
     onSearch: () -> Unit,
     keyboardController: SoftwareKeyboardController?,
     focusManager: FocusManager,
@@ -109,7 +127,7 @@ fun SearchBar(
 ) {
     OutlinedTextField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = onQueryChange, // ⬅️ This works now
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         leadingIcon = {

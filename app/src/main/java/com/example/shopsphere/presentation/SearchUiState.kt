@@ -1,10 +1,11 @@
 package com.example.shopsphere.presentation
 
+import androidx.compose.ui.text.input.TextFieldValue
 import com.example.shopsphere.domain.model.Product
 import com.example.shopsphere.domain.model.SearchSuggestion
 
 data class SearchUiState(
-    val query: String = "",
+    val query: TextFieldValue = TextFieldValue(""),
     val suggestions: List<SearchSuggestion> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,

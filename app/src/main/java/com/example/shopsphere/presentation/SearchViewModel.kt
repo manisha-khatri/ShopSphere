@@ -1,5 +1,7 @@
 package com.example.shopsphere.presentation
 
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shopsphere.domain.model.Product
@@ -53,16 +55,16 @@ class SearchViewModel @Inject constructor(
     }
 
     // 🔍 Handle query change
-    private fun onQueryChanged(query: String) {
-        _uiState.update { it.copy(query = query, isLoading = true, error = null) }
+    private fun onQueryChanged(newQuery: TextFieldValue) {
+        _uiState.update { it.copy(query = newQuery, isLoading = true, error = null) }
 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(300L)
             try {
                 val suggestions: List<SearchSuggestion> =
-                    if (query.isBlank()) emptyList()
-                    else getSearchSuggestionsUseCase(query)
+                    if (newQuery.text.isBlank()) emptyList()
+                    else getSearchSuggestionsUseCase(newQuery.text)
 
                 _uiState.update { it.copy(suggestions = suggestions, isLoading = false, error = null) }
             } catch (e: Exception) {
@@ -72,20 +74,26 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun onSuggestionClicked(suggestion: String) {
-        _uiState.update { it.copy(query = suggestion, suggestions = emptyList()) }
+        val newTextFieldValue = TextFieldValue(
+            text = suggestion,
+            selection = TextRange(suggestion.length) // ⬅️ Set the cursor position to the end
+        )
+        _uiState.update { it.copy(query = newTextFieldValue, suggestions = emptyList()) }
         onEvent(SearchEvent.ProductSearch(suggestion))
     }
 
     // ❌ Clear query & suggestions
     private fun onClearQuery() {
-        _uiState.update { it.copy(query = "", suggestions = emptyList(), isLoading = false, error = null) }
+        _uiState.update {
+            it.copy(query = TextFieldValue(""), suggestions = emptyList(), isLoading = false, error = null)
+        }
         searchJob?.cancel()
     }
 
     // 🔄 Retry last query
     private fun onRetrySearch() {
-        uiState.value.query.takeIf { it.isNotBlank() }?.let {
-            onQueryChanged(it)
+        uiState.value.query.text.takeIf { it.isNotBlank() }?.let {
+            onQueryChanged(uiState.value.query)
         }
     }
 }
