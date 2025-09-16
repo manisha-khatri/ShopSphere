@@ -7,8 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import com.example.shopsphere.presentation.navigation.ShopSphereNavGraph
-import com.example.shopsphere.presentation.theme.ShopSphereTheme
+import com.example.shopsphere.presentation.screen.SearchScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -16,13 +15,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ShopSphereTheme {
-                Scaffold { innerPadding ->
-                    Box(
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        ShopSphereNavGraph()
-                    }
+            Scaffold { innerPadding ->
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    SearchScreen()
                 }
             }
         }

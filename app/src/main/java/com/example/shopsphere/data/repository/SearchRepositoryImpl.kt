@@ -1,38 +1,40 @@
 package com.example.shopsphere.data.repository
 
-import com.example.shopsphere.data.local.LocalDataSource
-import com.example.shopsphere.data.remote.RemoteDataSource
+import com.example.shopsphere.data.cache.SearchSuggestionsDao
+import com.example.shopsphere.data.network.SearchApiService
+import com.example.shopsphere.data.toCachedSuggestion
+import com.example.shopsphere.data.toProduct
+import com.example.shopsphere.data.toSearchSuggestion
+import com.example.shopsphere.domain.model.Product
 import com.example.shopsphere.domain.model.SearchSuggestion
 import com.example.shopsphere.domain.repository.SearchRepository
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class SearchRepositoryImpl @Inject constructor(
-    private val remote: RemoteDataSource,
-    private val local: LocalDataSource
+    private val api: SearchApiService,
+    private val dao: SearchSuggestionsDao
 ) : SearchRepository {
 
-    override suspend fun getSearchSuggestions(query: String): List<SearchSuggestion> {
-        // Step 1: Check local DB
-        val cached = local.getSuggestions(query)
-        if (cached.isNotEmpty()) {
-            return cached.map { SearchSuggestion(it.suggestion) }
+    override suspend fun getSuggestions(query: String): List<SearchSuggestion> {
+        return try {
+            val networkSuggestions = api.getSearchSuggestions(query)
+            dao.clearAndInsert(networkSuggestions.map { it.toCachedSuggestion() })
+            networkSuggestions.map { it.toSearchSuggestion() }
+        } catch (e: Exception) {
+            val cachedSuggestions = dao.getSuggestions(query).firstOrNull() ?: emptyList()
+            cachedSuggestions.map { it.toSearchSuggestion() }
         }
-
-        // Step 2: Fetch from API
-        val remoteSuggestions = remote.fetchSuggestions(query).take(7)
-        if (remoteSuggestions.isNotEmpty()) {
-            local.saveSuggestions(query, remoteSuggestions)
-            return remoteSuggestions.map { SearchSuggestion(it) }
-        }
-
-        return emptyList()
     }
 
-    override suspend fun getCachedSuggestions(query: String): List<SearchSuggestion> {
-        return local.getSuggestions(query).map { SearchSuggestion(it.suggestion) }
-    }
-
-    override suspend fun saveSuggestions(query: String, suggestions: List<SearchSuggestion>) {
-        local.saveSuggestions(query, suggestions.map { it.suggestion })
+    override suspend fun getProducts(query: String): List<Product> {
+        return try {
+            val networkProducts = api.getProducts(query).products
+            networkProducts.map { it.toProduct() }
+        } catch (e: Exception) {
+            throw e
+        }
     }
 }
