@@ -63,6 +63,8 @@ dependencies {
     // Networking & Serialization
     implementation(libs.retrofit)
     implementation(libs.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
 
     // Coroutines & ViewModel
     implementation(libs.coroutine.viewmodel) // androidx.lifecycle:lifecycle-viewmodel-ktx
@@ -136,4 +138,5 @@ dependencies {
     // Flow testing library
     testImplementation(libs.turbine)
     androidTestImplementation(libs.turbine)
+
 }
