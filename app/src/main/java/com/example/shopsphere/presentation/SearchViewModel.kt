@@ -4,10 +4,9 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.shopsphere.domain.model.Product
-import com.example.shopsphere.domain.model.SearchSuggestion
 import com.example.shopsphere.domain.usecase.GetProductsUseCase
 import com.example.shopsphere.domain.usecase.GetSearchSuggestionsUseCase
+import com.example.shopsphere.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -40,41 +39,67 @@ class SearchViewModel @Inject constructor(
 
     private fun onProductSearch(suggestion: String) {
         val newTextFieldValue = TextFieldValue(text = suggestion, selection = TextRange(suggestion.length))
-        _uiState.update { it.copy(query = newTextFieldValue, suggestions = emptyList(), isProductLoading = true, error = null, products = emptyList()) }
+        _uiState.update {
+            it.copy(
+                query = newTextFieldValue,
+                suggestions = emptyList(),
+                isProductLoading = true,
+                error = null,
+                products = emptyList()
+            )
+        }
 
         viewModelScope.launch {
-            try {
-                val products: List<Product> = getProductsUseCase(suggestion) // ⬅️ Call new use case
-                _uiState.update {
-                    it.copy(products = products, isProductLoading = false, error = null)
+            when(val result = getProductsUseCase(suggestion)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            products = result.data,
+                            isProductLoading = false,
+                            error = null
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isProductLoading = false, error = e.message) }
+                is Result.Failure -> {
+                    _uiState.update {
+                        it.copy(
+                            isProductLoading = false,
+                            error = result.throwable.message ?: "Unexpected error"
+                        )
+                    }
+                }
             }
         }
     }
 
-    // 🔍 Handle query change
     private fun onQueryChanged(newQuery: TextFieldValue) {
         _uiState.update { it.copy(query = newQuery, isLoading = true, error = null) }
 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(300L)
-            try {
-                val suggestions: List<SearchSuggestion> =
-                    if (newQuery.text.isBlank()) emptyList()
-                    else getSearchSuggestionsUseCase(newQuery.text)
 
-                _uiState.update { it.copy(suggestions = suggestions, isLoading = false, error = null) }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            when(val result = getSearchSuggestionsUseCase(newQuery.text)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            suggestions = result.data,
+                            isLoading = false,
+                            error = null
+                        )
+                    }
+                }
+                is Result.Failure -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = result.throwable.message ?: "Unexpected error"
+                        )
+                    }
+                }
             }
         }
     }
-
-
-
 
     private fun onClearQuery() {
         _uiState.update {

@@ -5,7 +5,7 @@ import androidx.room.Room
 import com.example.shopsphere.data.cache.SearchSuggestionsDao
 import com.example.shopsphere.data.cache.SearchSuggestionsDatabase
 import com.example.shopsphere.data.network.SearchApiService
-import com.example.shopsphere.data.repository.SearchRepositoryImpl
+import com.example.shopsphere.data.SearchRepositoryImpl
 import com.example.shopsphere.domain.repository.SearchRepository
 import dagger.Module
 import dagger.Provides
