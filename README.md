@@ -1,5 +1,3 @@
-Got it 🚀 Let me draft a solid **README.md** description for your project. Since your project is called **ShopSphere** and you’re building it with Clean Architecture + Jetpack Compose, here’s a professional yet approachable README description you can use (and expand later):
-
 ---
 
 # 🛒 ShopSphere
