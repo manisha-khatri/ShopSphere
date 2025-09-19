@@ -32,19 +32,19 @@ class SearchViewModel @Inject constructor(
     fun onEvent(event: SearchEvent) {
         when (event) {
             is SearchEvent.QueryChanged -> onQueryChanged(event.query)
-            is SearchEvent.SuggestionClicked -> onSuggestionClicked(event.suggestion)
+            is SearchEvent.SuggestionClicked -> onProductSearch(event.suggestion)
             is SearchEvent.ClearQuery -> onClearQuery()
             is SearchEvent.RetrySearch -> onRetrySearch()
-            is SearchEvent.ProductSearch -> onProductSearch(event.query)
         }
     }
 
-    private fun onProductSearch(query: String) {
-        _uiState.update { it.copy(isProductLoading = true, error = null, products = emptyList()) }
+    private fun onProductSearch(suggestion: String) {
+        val newTextFieldValue = TextFieldValue(text = suggestion, selection = TextRange(suggestion.length))
+        _uiState.update { it.copy(query = newTextFieldValue, suggestions = emptyList(), isProductLoading = true, error = null, products = emptyList()) }
 
         viewModelScope.launch {
             try {
-                val products: List<Product> = getProductsUseCase(query) // ⬅️ Call new use case
+                val products: List<Product> = getProductsUseCase(suggestion) // ⬅️ Call new use case
                 _uiState.update {
                     it.copy(products = products, isProductLoading = false, error = null)
                 }
@@ -73,14 +73,7 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    private fun onSuggestionClicked(suggestion: String) {
-        val newTextFieldValue = TextFieldValue(
-            text = suggestion,
-            selection = TextRange(suggestion.length)
-        )
-        _uiState.update { it.copy(query = newTextFieldValue, suggestions = emptyList()) }
-        onEvent(SearchEvent.ProductSearch(suggestion))
-    }
+
 
 
     private fun onClearQuery() {

@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +40,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.shopsphere.domain.model.Product
@@ -73,20 +71,13 @@ fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
                     viewModel.onEvent(SearchEvent.QueryChanged(newQuery))
                 }
             },
-            onSearch = {
-                viewModel.onEvent(SearchEvent.RetrySearch)
-            },
             keyboardController = keyboardController,
             focusManager = focusManager
         )
         if (state.isLoading) {
-            LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            )
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
         }
-        if (state.query.text.isNotBlank() && state.suggestions.isNotEmpty()) {
+        if (!state.isLoading && state.query.text.isNotBlank() && state.suggestions.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -94,7 +85,6 @@ fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
             ) {
                 SuggestionsList(
                     suggestions = state.suggestions,
-                    isLoading = state.isLoading,
                     query = state.query.text,
                     onSuggestionClick = { suggestion ->
                         viewModel.onEvent(SearchEvent.SuggestionClicked(suggestion))
@@ -120,20 +110,21 @@ fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
 fun SearchBar(
     query: TextFieldValue,
     onQueryChange: (TextFieldValue) -> Unit,
-    onSearch: () -> Unit,
     keyboardController: SoftwareKeyboardController?,
     focusManager: FocusManager,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = { query ->
+            onQueryChange(query)
+        },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        trailingIcon = {
+        leadingIcon = {
             IconButton(
                 onClick = {
-                    onSearch()
+                    onQueryChange
                     keyboardController?.hide()
                     focusManager.clearFocus()
                 }
@@ -150,7 +141,7 @@ fun SearchBar(
         ),
         keyboardActions = KeyboardActions(
             onSearch = {
-                onSearch()
+                onQueryChange
                 keyboardController?.hide()
                 focusManager.clearFocus()
             }
@@ -171,31 +162,27 @@ fun SearchBar(
 @Composable
 fun SuggestionsList(
     suggestions: List<SearchSuggestion>,
-    isLoading: Boolean,
     query: String,
     onSuggestionClick: (String) -> Unit,
-    modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier) {
-        if (!isLoading) {
-            when {
-                suggestions.isNotEmpty() -> {
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        items(suggestions) { suggestion ->
-                            SuggestionItem(
-                                suggestion = suggestion.suggestion,
-                                onClick = { onSuggestionClick(suggestion.suggestion) }
-                            )
-                        }
+    Box {
+        when {
+            suggestions.isNotEmpty() -> {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    items(suggestions) { suggestion ->
+                        SuggestionItem(
+                            suggestion = suggestion.suggestion,
+                            onClick = { onSuggestionClick(suggestion.suggestion) }
+                        )
                     }
                 }
-                query.isNotBlank() -> {
-                    Text(
-                        text = "No suggestions found",
-                        modifier = Modifier.padding(top = 16.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+            }
+            query.isNotBlank() -> {
+                Text(
+                    text = "No suggestions found",
+                    modifier = Modifier.padding(top = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
