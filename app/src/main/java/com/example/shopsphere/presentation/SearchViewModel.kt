@@ -8,12 +8,7 @@ import com.example.shopsphere.domain.usecase.GetProductsUseCase
 import com.example.shopsphere.domain.usecase.GetSearchSuggestionsUseCase
 import com.example.shopsphere.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,8 +20,15 @@ class SearchViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+    private val queryFlow = MutableStateFlow("")
 
-    private var searchJob: Job? = null
+    init {
+        queryFlow
+            .debounce(300L) // wait for user to stop typing
+            .filter { it.isNotBlank() } // ignore empty queries
+            .onEach { query -> fetchSuggestions(query) }
+            .launchIn(viewModelScope)
+    }
 
     fun onEvent(event: SearchEvent) {
         when (event) {
@@ -38,7 +40,10 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun onProductSearch(suggestion: String) {
-        val newTextFieldValue = TextFieldValue(text = suggestion, selection = TextRange(suggestion.length))
+        val newTextFieldValue = TextFieldValue(
+            text = suggestion,
+            selection = TextRange(suggestion.length)
+        )
         _uiState.update {
             it.copy(
                 query = newTextFieldValue,
@@ -50,7 +55,7 @@ class SearchViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            when(val result = getProductsUseCase(suggestion)) {
+            when (val result = getProductsUseCase(suggestion)) {
                 is Result.Success -> {
                     _uiState.update {
                         it.copy(
@@ -73,13 +78,15 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun onQueryChanged(newQuery: TextFieldValue) {
-        _uiState.update { it.copy(query = newQuery, isLoading = true, error = null) }
+        _uiState.update {
+            it.copy(query = newQuery, isLoading = true, error = null)
+        }
+        queryFlow.value = newQuery.text
+    }
 
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            delay(300L)
-
-            when(val result = getSearchSuggestionsUseCase(newQuery.text)) {
+    private fun fetchSuggestions(query: String) {
+        viewModelScope.launch {
+            when (val result = getSearchSuggestionsUseCase(query)) {
                 is Result.Success -> {
                     _uiState.update {
                         it.copy(
@@ -103,15 +110,19 @@ class SearchViewModel @Inject constructor(
 
     private fun onClearQuery() {
         _uiState.update {
-            it.copy(query = TextFieldValue(""), suggestions = emptyList(), isLoading = false, error = null)
+            it.copy(
+                query = TextFieldValue(""),
+                suggestions = emptyList(),
+                isLoading = false,
+                error = null
+            )
         }
-        searchJob?.cancel()
+        queryFlow.value = ""
     }
 
-    // 🔄 Retry last query
     private fun onRetrySearch() {
         uiState.value.query.text.takeIf { it.isNotBlank() }?.let {
-            onQueryChanged(uiState.value.query)
+            queryFlow.value = it
         }
     }
 }

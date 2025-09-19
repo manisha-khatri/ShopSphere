@@ -7,6 +7,9 @@ import javax.inject.Inject
 
 class GetSearchSuggestionsUseCase @Inject constructor(private val repository: SearchRepository) {
     suspend operator fun invoke(query: String): Result<List<SearchSuggestion>> {
-        return repository.getSuggestions(query)
+        return when(val result = repository.getSuggestions(query)) {
+            is Result.Failure -> result
+            is Result.Success -> Result.Success(result.data.take(7))
+        }
     }
 }
