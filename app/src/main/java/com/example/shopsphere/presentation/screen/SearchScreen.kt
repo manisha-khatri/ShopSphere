@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.shopsphere.domain.model.Product
 import com.example.shopsphere.domain.model.SearchSuggestion
 import com.example.shopsphere.presentation.SearchEvent
@@ -50,11 +51,11 @@ import com.example.shopsphere.presentation.SearchViewModel
 
 @Composable
 fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
@@ -65,62 +66,54 @@ fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
                 })
             }
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            SearchBar(
-                query = state.query,
-                onQueryChange = { newQuery ->
+        SearchBar(
+            query = state.query,
+            onQueryChange = { newQuery ->
+                if (newQuery.text != state.query.text) {
                     viewModel.onEvent(SearchEvent.QueryChanged(newQuery))
-                },
-                onSearch = {
-                    viewModel.onEvent(SearchEvent.RetrySearch)
-                },
-                keyboardController = keyboardController,
-                focusManager = focusManager
-            )
-            if (state.isLoading) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                )
-            }
-
-            if (state.isProductLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
                 }
-            } else if (state.products.isNotEmpty()) {
-                ProductList(products = state.products)
-            }
-        }
-
-        if (state.query.text.isNotBlank() && state.suggestions.isNotEmpty()) {
-            Box(
+            },
+            onSearch = {
+                viewModel.onEvent(SearchEvent.RetrySearch)
+            },
+            keyboardController = keyboardController,
+            focusManager = focusManager
+        )
+        if (state.isLoading) {
+            LinearProgressIndicator(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 72.dp) // ⬅️ Increase this value to move the dropdown down
-                    .zIndex(1f)
+                    .padding(vertical = 8.dp)
+            )
+        }
+        if (state.query.text.isNotBlank() && state.suggestions.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    SuggestionsList(
-                        suggestions = state.suggestions,
-                        isLoading = state.isLoading,
-                        query = state.query.text,
-                        onSuggestionClick = { suggestion ->
-                            viewModel.onEvent(SearchEvent.SuggestionClicked(suggestion))
-                        }
-                    )
-                }
+                SuggestionsList(
+                    suggestions = state.suggestions,
+                    isLoading = state.isLoading,
+                    query = state.query.text,
+                    onSuggestionClick = { suggestion ->
+                        viewModel.onEvent(SearchEvent.SuggestionClicked(suggestion))
+                    }
+                )
             }
         }
+        if (state.isProductLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (state.products.isNotEmpty()) {
+            ProductList(products = state.products)
+        }
     }
+
 }
 
 @Composable

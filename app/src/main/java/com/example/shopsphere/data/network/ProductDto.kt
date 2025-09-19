@@ -1,12 +1,14 @@
 package com.example.shopsphere.data.network
 
+import com.google.gson.annotations.SerializedName
+
 data class ProductsResponse(
     val products: List<ProductDto>
 )
 
 data class ProductDto(
-    val id: String,
-    val name: String,
-    val price: Double,
-    val imageUrl: String
+    @SerializedName("id") val id: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("price") val price: Double,
+    @SerializedName("imageUrl") val imageUrl: String
 )

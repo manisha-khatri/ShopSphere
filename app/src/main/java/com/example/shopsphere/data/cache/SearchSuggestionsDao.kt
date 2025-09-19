@@ -14,7 +14,7 @@ interface SearchSuggestionsDao {
     suspend fun insertSuggestions(suggestions: List<CachedSuggestion>)
 
     @Query("SELECT * FROM cached_suggestions WHERE suggestion LIKE '%' || :query || '%'")
-    fun getSuggestions(query: String): Flow<List<CachedSuggestion>>
+    fun fetchSuggestions(query: String): Flow<List<CachedSuggestion>>
 
     @Query("DELETE FROM cached_suggestions")
     suspend fun clearSuggestions()

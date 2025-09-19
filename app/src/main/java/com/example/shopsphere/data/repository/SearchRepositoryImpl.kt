@@ -24,7 +24,7 @@ class SearchRepositoryImpl @Inject constructor(
             dao.clearAndInsert(networkSuggestions.map { it.toCachedSuggestion() })
             networkSuggestions.map { it.toSearchSuggestion() }
         } catch (e: Exception) {
-            val cachedSuggestions = dao.getSuggestions(query).firstOrNull() ?: emptyList()
+            val cachedSuggestions = dao.fetchSuggestions(query).firstOrNull() ?: emptyList()
             cachedSuggestions.map { it.toSearchSuggestion() }
         }
     }

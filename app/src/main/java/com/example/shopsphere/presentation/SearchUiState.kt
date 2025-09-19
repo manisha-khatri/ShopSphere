@@ -9,7 +9,6 @@ data class SearchUiState(
     val suggestions: List<SearchSuggestion> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-
-    val isProductLoading: Boolean = false, // ⬅️ New: Loading state for product search
-    val products: List<Product> = emptyList(), // ⬅️ New: List of products
+    val isProductLoading: Boolean = false,
+    val products: List<Product> = emptyList(),
 )

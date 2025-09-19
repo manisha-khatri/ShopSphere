@@ -40,7 +40,7 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun onProductSearch(query: String) {
-        _uiState.update { it.copy(isProductLoading = true, error = null, products = emptyList() ) }
+        _uiState.update { it.copy(isProductLoading = true, error = null, products = emptyList()) }
 
         viewModelScope.launch {
             try {
@@ -76,13 +76,13 @@ class SearchViewModel @Inject constructor(
     private fun onSuggestionClicked(suggestion: String) {
         val newTextFieldValue = TextFieldValue(
             text = suggestion,
-            selection = TextRange(suggestion.length) // ⬅️ Set the cursor position to the end
+            selection = TextRange(suggestion.length)
         )
         _uiState.update { it.copy(query = newTextFieldValue, suggestions = emptyList()) }
         onEvent(SearchEvent.ProductSearch(suggestion))
     }
 
-    // ❌ Clear query & suggestions
+
     private fun onClearQuery() {
         _uiState.update {
             it.copy(query = TextFieldValue(""), suggestions = emptyList(), isLoading = false, error = null)
